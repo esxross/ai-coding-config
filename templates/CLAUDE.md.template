@@ -1,0 +1,24 @@
+# [リポジトリ名] CLAUDE.md
+
+## 共通ルール
+@.claude/rules/core/communication.md
+@.claude/rules/core/git-workflow.md
+@.claude/rules/core/session-start.md
+
+---
+
+## このリポジトリ固有の情報
+
+### 技術スタック
+-
+
+### よく使うコマンド
+- 開発サーバー起動:
+- テスト実行:
+- ビルド:
+
+### ディレクトリ構成
+-
+
+### 注意事項
+-
