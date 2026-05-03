@@ -13,6 +13,7 @@ Claude Code をはじめとするAIコーディングツール向けの共通ル
 | `skills/code-review/` | コードレビュースキル（SKILL.md + 指摘品質例） |
 | `skills/self-review/` | 3エージェント並列レビュー→批判的精査→自動修正 |
 | `skills/fix-review-comments/` | レビュー指摘の批判的評価・妥当なものだけ修正 |
+| `skills/security-review/` | PR差分のセキュリティレビュー（OWASP Top 10・信頼度0.8+のみ報告） |
 | `.agent/skills/` | エージェント用スキル定義（上記と同内容） |
 | `hooks/` | SessionStart等のHookスクリプト |
 | `templates/` | 各リポジトリ用のひな形 |
@@ -80,7 +81,7 @@ cp ../ai-coding-config/templates/settings.json.template .claude/settings.json
 
 ### 4. コードレビュースキルの導入（任意）
 
-`/self-review`・`/fix-review-comments`・`/code-review` を使う場合は追加で設定する。
+`/self-review`・`/fix-review-comments`・`/code-review`・`/security-review` を使う場合は追加で設定する。
 
 ```bash
 cd ~/Project/my-app
@@ -96,6 +97,7 @@ mkdir -p .claude/skills
 ln -s ../../../ai-coding-config/skills/code-review         .claude/skills/code-review
 ln -s ../../../ai-coding-config/skills/self-review         .claude/skills/self-review
 ln -s ../../../ai-coding-config/skills/fix-review-comments .claude/skills/fix-review-comments
+ln -s ../../../ai-coding-config/skills/security-review     .claude/skills/security-review
 ```
 
 設定後のディレクトリ構成：
@@ -110,7 +112,8 @@ my-app/
     └── skills/
         ├── code-review/          ← symlink
         ├── self-review/          ← symlink
-        └── fix-review-comments/  ← symlink
+        ├── fix-review-comments/  ← symlink
+        └── security-review/      ← symlink
 ```
 
 使い方：
@@ -119,7 +122,24 @@ my-app/
 /code-review          # 単体レビュー
 /self-review          # 3並列レビュー → 批判的精査 → 自動修正
 /fix-review-comments  # レビュー指摘の精査・修正のみ
+/security-review      # PR差分のセキュリティレビュー（OWASP Top 10）
 ```
+
+#### `/security-review` の設計について
+
+[sabakan1/claude-security-skills](https://zenn.dev/sabakan1/articles/57ca07f4b277b4) の記事を参考に、以下の2点を取り込んだ：
+
+**信頼度スコアによる偽陽性の抑制**
+各指摘に 0.0〜1.0 の信頼度スコアを付与し、**0.8未満は出力しない**。
+既存のバリデーション層やフレームワークの保護が機能している場合はスコアを下げて報告しない。
+これにより「たぶん大丈夫だが念のため」という低品質な指摘を除外できる。
+
+**git diff 限定のスコープ**
+プロジェクト全体ではなく PR の差分のみを対象にすることでコストと実行時間を抑える。
+全体スキャンが必要な場面（リリース前等）は `npm audit` / `trivy` 等の専用ツールを併用する。
+
+> カバレッジの限界: コードの静的パターン検査のため、ビジネスロジック欠陥・ランタイム脆弱性は検出不可。
+> OWASP Top 10 の実カバレッジは 65〜70% 程度と見積もる（記事の実測値より）。
 
 ### 5. SessionStart Hook の動作確認
 
